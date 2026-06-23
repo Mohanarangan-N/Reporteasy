@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "ReportEasy",
+    "slug": "reporteasy",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0A0F1E",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.moradigital.reporteasy"
+    },
+    "android": {
+      "package": "com.moradigital.reporteasy",
+      "versionCode": 1,
+      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE", "INTERNET"],
+      "adaptiveIcon": { "backgroundColor": "#0A0F1E" }
+    },
+    "web": {
+      "bundler": "metro",
+      "name": "ReportEasy",
+      "shortName": "ReportEasy",
+      "description": "Understand your lab report in your language",
+      "themeColor": "#1D9E75",
+      "backgroundColor": "#0A0F1E"
+    },
+    "plugins": [["expo-document-picker", {}]],
+    "extra": { "eas": { "projectId": "YOUR_EAS_PROJECT_ID" } }
+  }
+}
