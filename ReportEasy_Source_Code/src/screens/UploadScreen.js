@@ -10,7 +10,7 @@ import * as FileSystem from 'expo-file-system';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants';
 import { useAuth } from '../hooks/useAuth';
-import { explainLabReport } from '../lib/claude';
+import { explainLabReport } from '../lib/gpt4o';
 import { supabase } from '../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 

@@ -13,8 +13,15 @@
     "android": {
       "package": "com.moradigital.reporteasy",
       "versionCode": 1,
-      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE", "INTERNET"],
-      "adaptiveIcon": { "backgroundColor": "#0A0F1E" }
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "INTERNET"
+      ],
+      "adaptiveIcon": {
+        "backgroundColor": "#0A0F1E"
+      }
     },
     "web": {
       "bundler": "metro",
@@ -24,7 +31,17 @@
       "themeColor": "#1D9E75",
       "backgroundColor": "#0A0F1E"
     },
-    "plugins": [["expo-document-picker", {}]],
-    "extra": { "eas": { "projectId": "YOUR_EAS_PROJECT_ID" } }
+    "plugins": [
+      [
+        "expo-document-picker",
+        {}
+      ],
+      "expo-status-bar"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      }
+    }
   }
 }

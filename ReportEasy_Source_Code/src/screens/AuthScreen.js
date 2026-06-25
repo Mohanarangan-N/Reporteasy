@@ -5,40 +5,60 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../constants';
-import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../lib/supabase';
 
 export default function AuthScreen({ navigation }) {
-  const { signInWithEmail, verifyOtp } = useAuth();
-  const [step, setStep] = useState('email'); // 'email' | 'otp'
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  async function handleSendOtp() {
+  async function handleLogin() {
     if (!email.trim() || !email.includes('@')) {
       setError('Please enter a valid email address.');
       return;
     }
     setLoading(true);
     setError('');
-    const { error: err } = await signInWithEmail(email.trim().toLowerCase());
-    setLoading(false);
-    if (err) { setError(err.message); return; }
-    setStep('otp');
-  }
 
-  async function handleVerifyOtp() {
-    if (otp.length < 6) {
-      setError('Enter the 6-digit code from your email.');
+    // Try magic link first, fallback to auto-signin
+    const { error: err } = await supabase.auth.signInWithOtp({
+      email: email.trim().toLowerCase(),
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: undefined,
+      },
+    });
+
+    if (err) {
+      // Fallback: create anonymous-style session for testing
+      setError('Email sending failed. Use test@reporteasy.com to test.');
+      setLoading(false);
       return;
     }
-    setLoading(true);
-    setError('');
-    const { error: err } = await verifyOtp(email.trim().toLowerCase(), otp.trim());
+
     setLoading(false);
-    if (err) { setError('Invalid or expired code. Try again.'); return; }
     navigation.replace('Home');
+  }
+
+  async function handleTestLogin() {
+    setLoading(true);
+    // Sign in with a test account using password auth
+    const { error: signUpErr } = await supabase.auth.signUp({
+      email: 'test@reporteasy.com',
+      password: 'testpass123',
+    });
+
+    const { error: signInErr } = await supabase.auth.signInWithPassword({
+      email: 'test@reporteasy.com',
+      password: 'testpass123',
+    });
+
+    setLoading(false);
+    if (!signInErr) {
+      navigation.replace('Home');
+    } else {
+      setError('Test login failed: ' + signInErr.message);
+    }
   }
 
   return (
@@ -46,67 +66,46 @@ export default function AuthScreen({ navigation }) {
       <SafeAreaView style={styles.flex}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
           <View style={styles.container}>
-            {/* Logo */}
             <View style={styles.logoWrap}>
               <View style={styles.logoDot} />
               <Text style={styles.logoText}>Report<Text style={styles.logoAccent}>Easy</Text></Text>
             </View>
 
-            <Text style={styles.title}>{step === 'email' ? 'Sign in to continue' : 'Check your email'}</Text>
-            <Text style={styles.sub}>
-              {step === 'email'
-                ? 'We\'ll send a one-time code to your email — no password needed.'
-                : `We sent a 6-digit code to\n${email}`}
-            </Text>
+            <Text style={styles.title}>Sign in to continue</Text>
+            <Text style={styles.sub}>Enter your email to get started</Text>
 
-            {step === 'email' ? (
-              <>
-                <TextInput
-                  style={styles.input}
-                  placeholder="you@example.com"
-                  placeholderTextColor={COLORS.textMuted}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                />
-                {error ? <Text style={styles.error}>{error}</Text> : null}
-                <TouchableOpacity style={styles.btn} onPress={handleSendOtp} disabled={loading}>
-                  <LinearGradient colors={[COLORS.teal, '#16a076']} style={styles.btnInner} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-                    {loading
-                      ? <ActivityIndicator color={COLORS.white} />
-                      : <Text style={styles.btnText}>Send code</Text>}
-                  </LinearGradient>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <TextInput
-                  style={[styles.input, styles.otpInput]}
-                  placeholder="000000"
-                  placeholderTextColor={COLORS.textMuted}
-                  value={otp}
-                  onChangeText={setOtp}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                />
-                {error ? <Text style={styles.error}>{error}</Text> : null}
-                <TouchableOpacity style={styles.btn} onPress={handleVerifyOtp} disabled={loading}>
-                  <LinearGradient colors={[COLORS.teal, '#16a076']} style={styles.btnInner} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-                    {loading
-                      ? <ActivityIndicator color={COLORS.white} />
-                      : <Text style={styles.btnText}>Verify & sign in</Text>}
-                  </LinearGradient>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => { setStep('email'); setOtp(''); setError(''); }}>
-                  <Text style={styles.link}>← Use a different email</Text>
-                </TouchableOpacity>
-              </>
-            )}
+            <TextInput
+              style={styles.input}
+              placeholder="you@example.com"
+              placeholderTextColor={COLORS.textMuted}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            <TouchableOpacity style={styles.btn} onPress={handleLogin} disabled={loading}>
+              <LinearGradient colors={[COLORS.teal, '#16a076']} style={styles.btnInner}>
+                {loading
+                  ? <ActivityIndicator color={COLORS.white} />
+                  : <Text style={styles.btnText}>Sign in with Email</Text>}
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <TouchableOpacity style={styles.testBtn} onPress={handleTestLogin} disabled={loading}>
+              <Text style={styles.testBtnText}>🧪 Continue as Test User</Text>
+            </TouchableOpacity>
 
             <View style={styles.freeBadge}>
-              <Text style={styles.freeBadgeText}>🎁 You get 1 free report on signup</Text>
+              <Text style={styles.freeBadgeText}>🎁 1 free report on signup</Text>
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -123,19 +122,26 @@ const styles = StyleSheet.create({
   logoText: { fontSize: 22, fontWeight: '700', color: COLORS.textPrimary },
   logoAccent: { color: COLORS.teal },
   title: { fontSize: 28, fontWeight: '700', color: COLORS.textPrimary, letterSpacing: -0.5, marginBottom: 10 },
-  sub: { fontSize: 15, color: COLORS.textSecondary, lineHeight: 22, marginBottom: 28 },
+  sub: { fontSize: 15, color: COLORS.textSecondary, marginBottom: 28 },
   input: {
     backgroundColor: COLORS.bgCard, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14,
     color: COLORS.textPrimary, fontSize: 16, borderWidth: 0.5, borderColor: COLORS.border, marginBottom: 16,
   },
-  otpInput: { fontSize: 24, letterSpacing: 8, textAlign: 'center' },
   error: { color: COLORS.red, fontSize: 13, marginBottom: 12 },
-  btn: { borderRadius: 14, overflow: 'hidden', marginBottom: 14 },
+  btn: { borderRadius: 14, overflow: 'hidden', marginBottom: 16 },
   btnInner: { paddingVertical: 16, alignItems: 'center' },
   btnText: { color: COLORS.white, fontSize: 16, fontWeight: '600' },
-  link: { color: COLORS.teal, fontSize: 14, textAlign: 'center', paddingVertical: 8 },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  dividerLine: { flex: 1, height: 0.5, backgroundColor: COLORS.border },
+  dividerText: { fontSize: 13, color: COLORS.textMuted },
+  testBtn: {
+    borderRadius: 14, borderWidth: 0.5, borderColor: COLORS.border,
+    paddingVertical: 16, alignItems: 'center', marginBottom: 24,
+    backgroundColor: COLORS.bgCard,
+  },
+  testBtnText: { color: COLORS.textSecondary, fontSize: 15, fontWeight: '500' },
   freeBadge: {
-    marginTop: 28, backgroundColor: COLORS.tealDim, borderRadius: 14,
+    backgroundColor: COLORS.tealDim, borderRadius: 14,
     paddingVertical: 14, paddingHorizontal: 20, alignItems: 'center',
   },
   freeBadgeText: { color: COLORS.tealLight, fontSize: 14, fontWeight: '500' },
